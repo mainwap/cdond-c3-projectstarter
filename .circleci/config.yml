@@ -39,18 +39,15 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: 
-          - build-frontend
+          keys: [frontend-build]
       - run:
-          name: "build the front-end"
+          name: Build front-end
           command: |
-            cd frontend
-            npm install
-            npm run build
+            # Your code here
+            exit 1
       - save_cache:
-          key: build-frontend
-          paths:
-            - frontend/node_modules
+          paths: [frontend/node_modules]
+          key: frontend-build
 
   build-backend:
     docker:
@@ -58,25 +55,15 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - build-backend
+          keys: [backend-build]
       - run:
           name: Back-end build
-          working_directory: ./backend
           command: |
-            npm i
-            npm run build
-            cp .env dist/.env
-            pwd && ls -al
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/backend/dist
-            - project/backend/node_modules
+             # Your code here
+             exit 1
       - save_cache:
-          key: build-backend
-          paths:
-            - backend/node_modules
+          paths: [backend/node_modules]
+          key: backend-build
 
   test-frontend:
     docker:
@@ -273,7 +260,9 @@ cleanup:
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
               # your code here
-            fi            
+            fi
+            
+
 workflows:
   default:
     jobs:
@@ -282,9 +271,9 @@ workflows:
       - test-frontend:
           requires: [build-frontend]
       - test-backend:
-          #requires: [build-backend]
+          requires: [build-backend]
       - scan-backend:
-          #requires: [build-backend]
+          requires: [build-backend]
       - scan-frontend:
           requires: [build-frontend]
       - deploy-infrastructure:
@@ -293,16 +282,16 @@ workflows:
             branches:
               only: [test-feature-branch]
       - configure-infrastructure:
-          #requires: [deploy-infrastructure]
+          requires: [deploy-infrastructure]
       - run-migrations:
-          #requires: [configure-infrastructure]
+          requires: [configure-infrastructure]
       - deploy-frontend:
-          #requires: [run-migrations]
+          requires: [run-migrations]
       - deploy-backend:
-          #requires: [run-migrations]
+          requires: [run-migrations]
       - smoke-test:
-          #requires: [deploy-backend, deploy-frontend]
+          requires: [deploy-backend, deploy-frontend]
       - cloudfront-update:
-          #requires: [smoke-test]
+          requires: [smoke-test]
       - cleanup:
-          #requires: [cloudfront-update]
+          requires: [cloudfront-update]
