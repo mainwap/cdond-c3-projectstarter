@@ -145,6 +145,10 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
+      - slack/notify:
+          channel: circleci
+          event: fail
+          template: basic_fail_1      
       # Here's where you will add some code to rollback on failure
 workflows:
   default:
