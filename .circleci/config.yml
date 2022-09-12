@@ -137,7 +137,43 @@ jobs:
           channel: circleci
           event: fail
           template: basic_fail_1      
-      # Here's where you will add some code to rollback on failure
+
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+        environment:
+          NODE_ENV: "local"
+          VERSION: "1"
+          ENVIRONMENT: "production"
+          TYPEORM_CONNECTION: $TYPEORM_CONNECTION
+          TYPEORM_HOST: $TYPEORM_HOST
+          TYPEORM_USERNAME: $TYPEORM_USERNAME
+          TYPEORM_PASSWORD: $TYPEORM_PASSWORD
+          TYPEORM_DATABASE: $TYPEORM_DATABASE
+          TYPEORM_PORT: $TYPEORM_PORT
+          TYPEORM_ENTITIES: $TYPEORM_ENTITIES
+    steps:
+      - checkout
+      # Add ssh keys with fingerprint
+      - add_ssh_keys:
+          fingerprints: ["19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"]
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk add curl
+            apk add --upgrade bash
+            apk add --update ansible
+            apk add openssh-client
+            pip3 install awscli
+      - run:
+          name: Configure server
+          command: |
+            cat ~/project/.circleci/ansible/inventory.txt
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/configure-server.yml
+      # Here's where you will add some code to rollback on failure 
 workflows:
   default:
     jobs:
@@ -154,3 +190,5 @@ workflows:
       - deploy-infrastructure:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           context: [slack]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]    
