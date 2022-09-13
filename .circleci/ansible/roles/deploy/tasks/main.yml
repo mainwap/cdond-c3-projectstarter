@@ -1,20 +1,83 @@
----
-  - name: copy
-    become: true
-    copy:
-      src:  /root/project/artifact.tar.gz
-      dest: /home/ubuntu/artifact.tar.gz 
-      
 
-  - name: Start PM2
-    become: true
-    shell: |
-      cd /home/ubuntu/
-      mkdir backend
-      cd backend
-      tar xzf /home/ubuntu/artifact.tar.gz 
-      echo " in backend folder ..f oll files"
-      ls
+---
+# .circleci/ansible/roles/deploy/tasks/main.yml
+- name: create backend directory on EC2
+  become: yes
+  file:
+    path: /home/ubuntu/backend
+    state: directory
+
+- name: copy files to backend
+  become: yes
+  copy: 
+    src: /root/project/artifact.tar.gz
+    dest: /home/ubuntu/backend/artifact.tar.gz
+    
+
+- name: unzip backend directory
+  become: yes
+  shell: |
+    cd /home/ubuntu/backend
+    tar -vxf artifact.tar.gz
+    rm -f artifact.tar.gz
+- name: "upgrade packages."
+  become: true
+  apt:
+    upgrade: "yes"
+
+- name: install curl
+  apt: 
+    name: 
+      - curl
+    update_cache: yes
+    cache_valid_time: 3600
+  become: true
+
+- name: get url
+  shell: |
+      curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
+  become: true 
+
+- name: install node
+  apt: 
+    name: 
+      - nodejs
+    update_cache: yes
+    cache_valid_time: 3600
+  become: true
+
+- name: "install pm2"
+  become: true
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
+
+
+- name: Start the app
+  shell: |
+      cd /home/ubuntu/backend
+      # npm login
       npm install
+      npm audit fix
       npm run build
-      pm2 start npm -- start
+      cat .env
+      npm run prestart:prod
+      pm2 list && ps aux|grep node
+      pm2 stop default
+      pm2 start npm -- run start
+      pm2 describe 0
+      pm2 list
+  become: true
+
+- name: start pm2 for dist/main.js
+  become: no
+  shell: pm2 start main.js
+  args:
+    chdir: /home/ubuntu/backend/dist
+
+
+- name: "wait 60 seconds for target connection to become reachable/usable."
+  wait_for_connection:
+    timeout: 60
