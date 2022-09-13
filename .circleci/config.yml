@@ -182,7 +182,7 @@ jobs:
        - restore_cache:
            keys:
             - backend-build
-        - run:
+       - run:
             name: Run Migrations
             command: |
               cp backend
