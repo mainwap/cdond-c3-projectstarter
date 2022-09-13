@@ -178,10 +178,7 @@ jobs:
     docker:
       - image: cimg/node:13.8.0
     steps:
-      - checkout
-      - aws-cli/install
-      - restore_cache:
-          keys: [backend-build]
+      -checkout
       - run:
           name: Run migrations
           command: |
