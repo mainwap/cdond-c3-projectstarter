@@ -181,7 +181,7 @@ jobs:
         -checkout
         -run:
             name: Run Migrations
-            command:
+            command: |
               cp backend
               ls
               npm install
