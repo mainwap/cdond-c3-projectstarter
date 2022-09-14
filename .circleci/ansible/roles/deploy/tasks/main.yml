@@ -7,7 +7,7 @@
     src: /home/circleci/project/artifact.tar.gz
     dest: /home/ubuntu/backend/
 - name: Extract backend files
-  become: true
+  # become: true
   shell: |
     cd /home/ubuntu/backend
     tar -vxf artifact.tar.gz
@@ -20,7 +20,7 @@
     var: output
 
 - name : Compile and start app 
-  become : true 
+  # become : true 
   shell : | 
     cd /home/ubuntu/backend
     npm install
