@@ -236,43 +236,38 @@ jobs:
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp ./dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive
 
-  deploy-backend:
+  Deploy-Backend:
     docker:
-      - image: python:3.11-rc-alpine
-        environment:
-          NODE_ENV: "production"
-          VERSION: "1"
-          ENVIRONMENT: "production"
-          TYPEORM_CONNECTION: $TYPEORM_CONNECTION
-          TYPEORM_HOST: $TYPEORM_HOST
-          TYPEORM_USERNAME: $TYPEORM_USERNAME
-          TYPEORM_PASSWORD: $TYPEORM_PASSWORD
-          TYPEORM_DATABASE: $TYPEORM_DATABASE
-          TYPEORM_PORT: $TYPEORM_PORT
-          TYPEORM_ENTITIES: $TYPEORM_ENTITIES       
+      - image: cimg/python:3.10.6
+
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints: ["19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"]
-      - attach_workspace: 
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
           at: ~/
-      - restore_cache:
-          keys:
-            - build-backend
+      - add_ssh_keys:
+          fingerprints:
+            - "19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"
+      
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible nodejs npm tar gzip
+            python3 -m pip install --user ansible
+            sudo apt update
+            sudo apt install nodejs
+            sudo apt install npm
       - run:
-          name: Deploy backend
+          name: Deploy backend and run ansible
           command: |
             cd backend
-            npm install
+            npm i
             npm run build
-            cd ..
+            ls
+            pwd
+            cd .. 
             tar -C backend -czvf artifact.tar.gz .
-            cat ~/project/.circleci/ansible/inventory.txt
-            ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml  
+            cd ~/project/.circleci/ansible
+            ansible-playbook -i inventory.txt deploy-backend.yml  
                            
 
 workflows:
