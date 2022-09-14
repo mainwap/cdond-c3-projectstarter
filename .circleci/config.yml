@@ -271,32 +271,43 @@ jobs:
 
   smoke-test:
     docker:
-      - image: cimg/aws:2022.06
+      # Lightweight Docker image 
+      - image: python:3.7-alpine3.11
     steps:
+      # Checkout code from git
       - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: ~/
-      - add_ssh_keys:
-          fingerprints:
-            - "19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"
-          
       - run:
           name: Install dependencies
           command: |
-            sudo apt install curl
+            # your code here
+            #yum -y install tar gzip
+            apk add --update tar gzip ansible nodejs npm curl zip
+            pip install awscli
       - run:
           name: Backend smoke test.
           command: |
-            BACKEND_IP=$(cat ~/project/.circleci/ansible/backendip.txt)
-            echo $BACKEND_IP
-            API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            if curl "${API_URL}/api/status" | grep "welcome"
+            export BACKEND_URL=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:project,Values=Udacity-Project3" --output text)
+            echo http://${BACKEND_URL}:3030/api/status
+            if 
+            curl -s http://${BACKEND_URL}:3030/api/status | grep "ok"
             then
-              exit 1
+              exit 0
             else
               exit 1
+            fi  
+      - run:
+          name: Frontend smoke test.
+          command: |
+            # your code here
+            #http://udapeople-595df6d.s3.amazonaws.com/index.html#/employees
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"            
+            echo ${URL} 
+            if curl -s ${URL} | grep "Welcome"
+            then
+                # Change this to 0 after the job fails
+              return 1
+            else
+              return 1
             fi            
                            
 workflows:
