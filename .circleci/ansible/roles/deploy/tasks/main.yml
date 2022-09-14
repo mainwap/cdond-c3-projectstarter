@@ -2,7 +2,7 @@
   ansible.builtin.wait_for_connection:
   timeout: 900
 - name: Copy backend compressed file 
-  become: true
+  # become: true
   copy:
     src: /home/circleci/project/artifact.tar.gz
     dest: /home/ubuntu/backend/
