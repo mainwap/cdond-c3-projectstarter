@@ -236,7 +236,7 @@ jobs:
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp ./dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive
 
-  Deploy-Backend:
+  deploy-backend:
     docker:
       - image: cimg/python:3.10.6
 
