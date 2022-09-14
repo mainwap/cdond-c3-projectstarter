@@ -11,14 +11,14 @@
   shell: |
     cd /home/ubuntu/backend
     tar -vxf artifact.tar.gz
-    rm artifact.tar.gz
+    #rm artifact.tar.gz
     ls
   register: output
 
 
 - debug:
     var: output
-    
+
 - name : Compile and start app 
   become : true 
   shell : | 
