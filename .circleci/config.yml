@@ -260,7 +260,7 @@ jobs:
           name: Deploy backend and run ansible
           command: |
             cd backend
-            npm i
+            npm install
             npm run build
             ls
             pwd
