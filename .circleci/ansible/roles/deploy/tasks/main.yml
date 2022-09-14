@@ -16,7 +16,7 @@
   become : true 
   shell : | 
     cd /home/ubuntu/backend
-    sudo apt-get npm install
+    sudo apt intall npm
     
-    sudo pm2 stop default
-    sudo pm2 start npm -- start
+    pm2 stop default
+    pm2 start npm -- start
