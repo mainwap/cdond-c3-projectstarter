@@ -268,8 +268,37 @@ jobs:
             tar -C backend -czvf artifact.tar.gz .
             cd ~/project/.circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml  
-                           
 
+  smoke-test:
+    docker:
+      - image: cimg/aws:2022.06
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: ~/
+      - add_ssh_keys:
+          fingerprints:
+            - "19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"
+          
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt install curl
+      - run:
+          name: Backend smoke test.
+          command: |
+            BACKEND_IP=$(cat ~/project/.circleci/ansible/backendip.txt)
+            echo $BACKEND_IP
+            API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            if curl "${API_URL}/api/status" | grep "welcome"
+            then
+              exit 1
+            else
+              exit 1
+            fi            
+                           
 workflows:
   default:
     jobs:
@@ -293,4 +322,6 @@ workflows:
       - deploy-frontend:
           requires: [run-migrations]
       - deploy-backend:
-          requires: [run-migrations]    
+          requires: [run-migrations]
+       - smoke-test:
+          requires: [deploy-backend, deploy-frontend]
