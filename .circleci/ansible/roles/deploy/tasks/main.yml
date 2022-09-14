@@ -30,7 +30,6 @@
   # become : true 
   shell : | 
     cd ~/backend_app
-    sudo apt install npm -y
     npm install
     
     pm2 stop default
