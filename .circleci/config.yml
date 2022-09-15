@@ -274,47 +274,43 @@ jobs:
 
   deploy-backend:
     docker:
-      - image: python:3.7-alpine3.11
-        environment:
-          TYPEORM_CONNECTION: "{{ lookup('env', 'TYPEORM_CONNECTION') }}"
-          TYPEORM_ENTITIES: "{{ lookup('env', 'TYPEORM_ENTITIES') }}"
-          TYPEORM_Hosts: "{{ lookup('env', 'TYPEORM_HOST') }}"
-          TYPEORM_PORT: 5432
-          TYPEORM_USERNAME: "{{ lookup('env', 'TYPEORM_USERNAME') }}"
-          TYPEORM_PASSWORD: "{{ lookup('env', 'TYPEORM_PASSWORD') }}"
-          TYPEORM_DATABASE: "{{ lookup('env', 'TYPEORM_DATABASE') }}"
-          TYPEORM_MIGRATIONS: "{{ lookup('env', 'TYPEORM_MIGTRATIONS') }}"
-          TYPEFORM_MIGRATIONS_DIR: "{{ lookup('env', 'TYPEORM_MIGTRATIONS_DIR') }}"
-
+    - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: ~/
       - add_ssh_keys:
           fingerprints:
-            - "19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"
-      
+            - "1d:ad:a7:8a:50:35:c2:55:38:a2:52:7e:22:68:df:b7"
+      - attach_workspace:
+          at: ~/
       - run:
           name: Install dependencies
           command: |
-            python3 -m pip install --user ansible
-            sudo apt update
-            sudo apt install nodejs
-            sudo apt install npm
+            apk update
+            apk upgrade
+            apk add tar gzip
+            python -m pip install --upgrade pip
+            apk add --update ansible
+            pip install awscli --upgrade
+            apk add nodejs npm
+            npm install pm2 -g
       - run:
-          name: Deploy backend and run ansible
+          name: Deploy backend
           command: |
             cd backend
-            echo NODE_ENV=production >> .env
-            npm install
-            npm run build
-            ls
             pwd
-            cd .. 
+            echo NODE_ENV=production >> .env
+            npm i
+            npm run build
+            cd ..
+            # Zip the directory
             tar -C backend -czvf artifact.tar.gz .
-            cd ~/project/.circleci/ansible
-            ansible-playbook -i inventory.txt deploy-backend.yml  
+            ls
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
+      - destroy-environment:
+          workFlowId: ${CIRCLE_WORKFLOW_ID:0:7} 
 
   smoke-test:
     docker:
@@ -397,34 +393,25 @@ jobs:
 
   cleanup:
     docker:
-      - image: amazon/aws-cli
+    - image: amazon/aws-cli
     steps:
-      # Checkout code from git 
       - checkout
       - run:
-          name: Get old stack workflow id
+          name: Remove old stacks and files
           command: |
-            # Fetch the Old workflow ID
-            export OldWorkflowID=$(aws cloudformation \
-            list-exports --query "Exports[?Name==\`OldWorkflowID\`].Value" \
-            --no-paginate --output text)
-            echo OldWorkflowID: "${OldWorkflowID}"
-            
-            echo CIRCLE_WORKFLOW_ID "${CIRCLE_WORKFLOW_ID:0:7}"
-            # Fetch the stack names          
-            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
-                    --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
-            echo Stack names: "${STACKS[@]}"
-            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
-            then
-            # your code goes here
-              echo "remove previous stack"
-              aws s3 rm --recursive s3://udapeople-"${OldWorkflowID}"
-              aws cloudformation delete-stack --stack-name udapeople-backend-${OldWorkflowID}
-              aws cloudformation delete-stack --stack-name udapeople-frontend-${OldWorkflowID}
-            fi
-            
-                                                     
+            # Fetch the current workflow ID
+            export CurrWorkflowID=$(aws cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
+            # Delete all the stacks/files not matching the current workflow Id ( Old stacks/files ) one by one
+            aws cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text \
+            |xargs echo -e | sed 's/\ /\n/'g | grep -v $CurrWorkflowID | cut -d '-' -f3 | sort | uniq | while read OldWorkflowID 
+            do
+              deleteS3=`aws s3 rb "s3://udapeople-${OldWorkflowID}" --force`
+              deleteBackStack=`aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"`
+              deleteFrontStack=`aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"`
+              echo -e "${OldWorkflowID} :\n ${deleteS3} \n ${deleteBackStack} \n ${deleteFrontStack} \n\n"
+            done >> cleanupStatus.txt
+            cat cleanupStatus.txt
+                                                                
 workflows:
   default:
     jobs:

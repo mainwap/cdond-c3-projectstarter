@@ -1,44 +1,67 @@
 ---
+- name: "Update/upgrade packages."
+  become: true
+  apt:
+    upgrade: "yes"
 
-- name: create web directory
+- name: "Create directory"
+  become: true
   file:
-    path: ~/backend_app
+    path: /home/ubuntu/backend/
     state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: 0755
 
-- name: Copy backend compressed file 
-  #become: true
+
+- name: Copy files
+  become: true
   copy:
-    src: /home/circleci/project/artifact.tar.gz
-    dest: ~/backend_app
-- name: Extract backend files
-  # become: true
+    src: /root/project/artifact.tar.gz
+    dest: /home/ubuntu/backend/
+    owner: ubuntu
+    group: ubuntu
+    mode: 0755
+
+# - name: Unarchive a file that is already on the remote machine
+#   ansible.builtin.unarchive:
+#     src: ~/backend/artifact.tar.gz
+#     dest: ~/backend
+#     remote_src: yes
+- name: unarchive backend files
+  become: yes
   shell: |
-    cd ~/backend_app
+    cd /home/ubuntu/backend/
     tar -vxf artifact.tar.gz
-    #rm artifact.tar.gz
+    rm -f artifact.tar.gz
+
+- name: "Install nodejs and npm."
+  become: true
+  apt:
+    name: ["nodejs", "npm"]
+    state: latest
+    update_cache: yes
+
+- name: "Install pm2."
+  become: true
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
+
+- name: "Build package"
+  become: true
+  command: npm run build
+  args:
+    chdir: /home/ubuntu/backend
+    
+- name: "Start server"
+  become: true
+  shell: |
+    pwd
     ls
-  register: output
-
-
-- debug:
-    var: output
-
-- name : Compile and start app 
-  # become : true 
-  shell : | 
-    cd ~/backend_app
-    npm install
-    npm run build
-    pm2 stop default
-    pm2 start npm -- start
-
-  environment:
-    TYPEORM_CONNECTION: "{{ lookup('env', 'TYPEORM_CONNECTION') }}"
-    TYPEORM_ENTITIES: "{{ lookup('env', 'TYPEORM_ENTITIES') }}"
-    TYPEORM_Hosts: "{{ lookup('env', 'TYPEORM_HOST') }}"
-    TYPEORM_PORT: 5432
-    TYPEORM_USERNAME: "{{ lookup('env', 'TYPEORM_USERNAME') }}"
-    TYPEORM_PASSWORD: "{{ lookup('env', 'TYPEORM_PASSWORD') }}"
-    TYPEORM_DATABASE: "{{ lookup('env', 'TYPEORM_DATABASE') }}"
-    TYPEORM_MIGRATIONS: "{{ lookup('env', 'TYPEORM_MIGTRATIONS') }}"
-    TYPEFORM_MIGRATIONS_DIR: "{{ lookup('env', 'TYPEORM_MIGTRATIONS_DIR') }}"    
+    cd dist
+    pm2 start npm --name 'udapeople' -- start
+  args:
+    chdir: /home/ubuntu/backend/
