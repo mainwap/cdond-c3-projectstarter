@@ -27,6 +27,8 @@ Resources:
         Enabled: True
         DefaultRootObject: index.html
         DefaultCacheBehavior:
+        #Policy for Disabled Cache (Overcome EC2 IP change issue)
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad    
           ForwardedValues:
             QueryString: False
           TargetOriginId: webpage
