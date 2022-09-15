@@ -398,7 +398,7 @@ jobs:
     docker: 
       - image: amazon/aws-cli
     steps:
-      - aws_configure_credential
+      #- aws_configure_credential
       - run:
           name: Fetch OldStack ID 
           command: |
