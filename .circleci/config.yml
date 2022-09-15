@@ -279,7 +279,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - "1d:ad:a7:8a:50:35:c2:55:38:a2:52:7e:22:68:df:b7"
+            - "19:aa:d2:08:3f:23:7f:19:33:83:ca:ec:c2:18:d5:28"
       - attach_workspace:
           at: ~/
       - run:
@@ -309,8 +309,6 @@ jobs:
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
-      - destroy-environment:
-          workFlowId: ${CIRCLE_WORKFLOW_ID:0:7} 
 
   smoke-test:
     docker:
