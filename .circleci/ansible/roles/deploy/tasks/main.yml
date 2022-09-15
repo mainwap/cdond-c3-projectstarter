@@ -5,9 +5,6 @@
     path: ~/backend_app
     state: directory
 
-- name: "wait 600 seconds for target connection to become reachable/usable."
-  ansible.builtin.wait_for_connection:
-  timeout: 600
 - name: Copy backend compressed file 
   #become: true
   copy:
@@ -31,7 +28,7 @@
   shell : | 
     cd ~/backend_app
     npm install
-    
+    npm run build
     pm2 stop default
     pm2 start npm -- start
 
